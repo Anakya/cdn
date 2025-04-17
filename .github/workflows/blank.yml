@@ -1,0 +1,36 @@
+name: Convert images to webp
+
+on:
+  push:
+    paths:
+      - '**.jpg'
+      - '**.jpeg'
+      - '**.png'
+
+jobs:
+  convert-to-webp:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up ImageMagick
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
+
+      - name: Convert to webp
+        run: |
+          mkdir -p webp
+          find . -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \) | while read file; do
+            filename=$(basename "$file")
+            name="${filename%.*}"
+            convert "$file" "webp/${name}.webp"
+          done
+
+      - name: Commit webp images
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'actions@github.com'
+          git add webp/*.webp || echo "No new webp files"
+          git diff --cached --quiet || git commit -m "Ajout automatique des .webp"
+          git push
